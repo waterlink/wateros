@@ -1,3 +1,5 @@
+.PHONY: clean
+
 all: wateros.iso
 
 multiboot_header.o: multiboot_header.asm
@@ -22,6 +24,7 @@ wateros.iso: isofiles/boot/kernel.bin isofiles/boot/grub/grub.cfg
 
 clean:
 	rm *.o *.bin *.iso
+	rm -r isofiles
 
 run: wateros.iso
 	qemu-system-x86_64 -cdrom wateros.iso

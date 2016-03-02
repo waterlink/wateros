@@ -1,30 +1,36 @@
 .PHONY: clean
 
-all: wateros.iso
+default: run
 
-multiboot_header.o: multiboot_header.asm
-	nasm -f elf64 multiboot_header.asm
+build/:
+	mkdir -p build
 
-boot.o: boot.asm
-	nasm -f elf64 boot.asm
+build/isofiles/boot/:
+	mkdir -p build/isofiles/boot
 
-kernel.bin: boot.o multiboot_header.o linker.ld
-	ld --nmagic --output=kernel.bin --script=linker.ld multiboot_header.o boot.o
+build/isofiles/boot/grub/:
+	mkdir -p build/isofiles/boot/grub
 
-isofiles/boot/grub/grub.cfg: grub.cfg
-	mkdir -p isofiles/boot/grub/
-	cp grub.cfg isofiles/boot/grub/
+build/multiboot_header.o: multiboot_header.asm build/
+	nasm -f elf64 multiboot_header.asm -o build/multiboot_header.o
 
-isofiles/boot/kernel.bin: kernel.bin
-	mkdir -p isofiles/boot
-	cp kernel.bin isofiles/boot/
+build/boot.o: boot.asm build/
+	nasm -f elf64 boot.asm -o build/boot.o
 
-wateros.iso: isofiles/boot/kernel.bin isofiles/boot/grub/grub.cfg
-	grub-mkrescue -o wateros.iso isofiles
+build/kernel.bin: build/boot.o build/multiboot_header.o linker.ld build/
+	ld --nmagic --output=build/kernel.bin --script=linker.ld build/multiboot_header.o build/boot.o
+
+build/isofiles/boot/grub/grub.cfg: grub.cfg build/isofiles/boot/grub/
+	cp grub.cfg build/isofiles/boot/grub/
+
+build/isofiles/boot/kernel.bin: build/kernel.bin build/isofiles/boot/
+	cp build/kernel.bin build/isofiles/boot/
+
+build/wateros.iso: build/isofiles/boot/kernel.bin build/isofiles/boot/grub/grub.cfg
+	grub-mkrescue -o build/wateros.iso build/isofiles
 
 clean:
-	rm *.o *.bin *.iso
-	rm -r isofiles
+	rm -r build
 
-run: wateros.iso
-	qemu-system-x86_64 -cdrom wateros.iso
+run: build/wateros.iso
+	qemu-system-x86_64 -cdrom build/wateros.iso
